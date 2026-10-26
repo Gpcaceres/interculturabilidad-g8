@@ -1,0 +1,246 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{lmodern}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage[table]{xcolor}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{espeverde}{RGB}{0,102,51}
+\titleformat{\section}{\large\bfseries\color{espeverde}}{\thesection.}{0.6em}{\MakeUppercase}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+\setstretch{1.15}
+\setlist{itemsep=0.15em, topsep=0.3em}
+
+\begin{document}
+
+% ============================================================
+% PORTADA
+% ============================================================
+\begin{titlepage}
+    \centering
+    \includegraphics[width=0.28\textwidth]{img/LogoESPE.png}\par\vspace{0.8cm}
+    {\Large\bfseries UNIVERSIDAD DE LAS FUERZAS ARMADAS -- ESPE\par}
+    \vspace{0.4cm}
+    {\large Departamento de Ciencias de la Computación\par}
+    {\large Carrera de Ingeniería de Software\par}
+    \vspace{1cm}
+    {\large\bfseries Desarrollo de Software Global Aplicado a la Interculturalidad\par}
+    \vspace{1cm}
+    {\large FORMATO 1 -- PROPUESTA DEL TEMA DEL PROYECTO\par}
+    \vspace{0.5cm}
+    {\LARGE\bfseries\color{espeverde} Atlas Anatómico Inmersivo:\\[0.2cm]
+    laboratorio de Realidad Virtual bilingüe (español--kichwa) para el estudio del ojo, los pulmones y el riñón\par}
+    \vspace{1cm}
+    \begin{tabular}{rl}
+        \textbf{Grupo:} & 8 \\[0.2cm]
+        \textbf{Integrantes:} & Germán Cáceres \\
+                              & Carlos Rivera \\
+                              & Samir Mideros \\[0.2cm]
+        \textbf{Docente:} & [Nombre del docente] \\[0.2cm]
+        \textbf{Fecha:} & 25 de octubre de 2026 \\
+    \end{tabular}
+    \vfill
+    {\large Sangolquí -- Ecuador\par}
+\end{titlepage}
+
+% ============================================================
+\section{Título del proyecto}
+% ============================================================
+\textbf{Atlas Anatómico Inmersivo: laboratorio de Realidad Virtual bilingüe (español--kichwa) para el estudio del ojo, los pulmones y el riñón.}
+
+% ============================================================
+\section{Introducción}
+% ============================================================
+La enseñanza de la anatomía humana se apoya tradicionalmente en láminas, libros y, en el mejor de los casos, en maquetas físicas o en el trabajo con cadáveres. Estos recursos son costosos, escasos fuera de las grandes ciudades y difíciles de usar para comprender la estructura tridimensional de los órganos: un estudiante que observa un dibujo plano del ojo o del riñón debe \emph{imaginar} cómo se superponen sus capas internas.
+
+Las tecnologías inmersivas, en particular la Realidad Virtual (RV), permiten que el estudiante se ubique \emph{dentro} de un laboratorio, tome un órgano con sus manos, lo gire, lo amplíe y lo separe en sus partes. Diversos estudios reportan que la RV mejora la comprensión espacial y la motivación en la enseñanza de la anatomía \cite{moro2017}.
+
+Sin embargo, la mayoría de atlas anatómicos digitales están disponibles solo en inglés o en español y no consideran la diversidad lingüística del Ecuador, un Estado constitucionalmente intercultural y plurinacional donde el kichwa es idioma oficial de relación intercultural \cite{constitucion}. El presente proyecto propone un \textbf{Atlas Anatómico Inmersivo} desarrollado con \textbf{Blender} y \textbf{Unity} que presenta los contenidos en español y kichwa, con narración por voz, subtítulos y modos de interacción accesibles. De esta forma, el proyecto une las tecnologías inmersivas con el software inclusivo e intercultural, ejes de la asignatura.
+
+% ============================================================
+\section{Planteamiento del problema}
+% ============================================================
+\textbf{Situación actual.} En el Ecuador, los estudiantes de bachillerato en Ciencias y de los primeros niveles de carreras de la salud aprenden anatomía principalmente con material impreso. Las instituciones rurales e interculturales bilingües rara vez cuentan con maquetas, laboratorios o software especializado, y los recursos digitales existentes son monolingües y no son accesibles para personas con discapacidad.
+
+\textbf{Problema existente.} No existe un recurso didáctico tridimensional, inmersivo, accesible y culturalmente pertinente que permita estudiar los órganos del cuerpo humano en español y kichwa.
+
+\textbf{Consecuencias.} Si el problema persiste:
+\begin{itemize}
+    \item Los estudiantes memorizan nombres sin comprender la estructura espacial de los órganos.
+    \item Se amplía la brecha educativa entre zonas urbanas y rurales.
+    \item Los estudiantes kichwa hablantes aprenden ciencia en un idioma que no es el propio, lo que debilita su lengua y su identidad.
+    \item Las personas con discapacidad visual, auditiva o motora quedan excluidas de las herramientas tecnológicas de aprendizaje.
+\end{itemize}
+
+\textbf{Beneficiarios afectados.} Estudiantes de bachillerato y de los primeros semestres de carreras de la salud, especialmente de instituciones del Sistema de Educación Intercultural Bilingüe, y sus docentes.
+
+% ============================================================
+\section{Justificación}
+% ============================================================
+\subsection*{Justificación social}
+El proyecto beneficia a estudiantes y docentes que no tienen acceso a laboratorios de anatomía, y en particular a la población kichwa hablante, al ofrecer contenido científico en su lengua. Además, incorpora criterios de accesibilidad para que estudiantes con distintas capacidades puedan usarlo.
+
+\subsection*{Justificación tecnológica}
+Se utilizará \textbf{Blender} para el modelado 3D de los órganos y \textbf{Unity} con \textbf{XR Interaction Toolkit} y \textbf{OpenXR} para construir el laboratorio virtual, compatible con visores autónomos (Meta Quest 2/3) y con un modo de escritorio para quienes no disponen de visor. Estas herramientas son gratuitas para uso educativo, lo que favorece su réplica en otras instituciones.
+
+\subsection*{Justificación académica}
+El proyecto aplica los contenidos de la asignatura: desarrollo de software para contextos culturales diversos, localización e internacionalización, diseño centrado en el usuario (ISO 9241-210) \cite{iso9241}, pautas de accesibilidad (WCAG 2.2) \cite{wcag22} y trabajo colaborativo con control de versiones (Git).
+
+% ============================================================
+\section{Objetivo general}
+% ============================================================
+Desarrollar un prototipo de laboratorio de Realidad Virtual con Blender y Unity que permita visualizar, manipular y estudiar modelos 3D del ojo, los pulmones y el riñón en español y kichwa, aplicando criterios de accesibilidad e inclusión.
+
+% ============================================================
+\section{Objetivos específicos}
+% ============================================================
+\begin{enumerate}
+    \item Identificar las necesidades de aprendizaje y de accesibilidad de la población objetivo mediante una encuesta y una revisión bibliográfica.
+    \item Modelar en Blender tres órganos (ojo, pulmones y riñón) separados en sus estructuras principales, optimizados para RV (menos de 50\,000 polígonos por órgano).
+    \item Implementar en Unity un laboratorio virtual con interacciones de agarre, rotación, escala, vista explosionada y etiquetas bilingües (español--kichwa).
+    \item Incorporar opciones de accesibilidad: narración por voz, subtítulos, alto contraste, tamaño de texto ajustable y modo sentado.
+    \item Evaluar la usabilidad del prototipo con al menos cinco usuarios mediante el cuestionario SUS (\emph{System Usability Scale}).
+\end{enumerate}
+
+% ============================================================
+\section{Población objetivo}
+% ============================================================
+\begin{itemize}
+    \item \textbf{Quiénes:} estudiantes de bachillerato en Ciencias y de los primeros semestres de carreras de la salud (Medicina, Enfermería, Biología); como usuarios secundarios, sus docentes.
+    \item \textbf{Edad:} entre 15 y 22 años.
+    \item \textbf{Contexto:} instituciones educativas del Ecuador, incluidas las del Sistema de Educación Intercultural Bilingüe, con acceso limitado a laboratorios de anatomía.
+    \item \textbf{Necesidades específicas:} contenido en su lengua materna (español o kichwa), explicaciones claras y breves, interacción sencilla para usuarios sin experiencia en RV y alternativas para personas con discapacidad visual, auditiva o motora.
+\end{itemize}
+
+% ============================================================
+\section{Propuesta de solución}
+% ============================================================
+\subsection{¿Qué se desarrollará?}
+Un laboratorio virtual con una mesa de estudio sobre la que el usuario elige un órgano. Al seleccionarlo, el órgano aparece a escala ampliada y puede tomarse con las manos (controles), girarse, ampliarse y \emph{explosionarse} para ver sus partes internas. Cada parte tiene una etiqueta en español y kichwa y una ficha con una descripción breve narrada por voz.
+
+\subsection{Alcance del prototipo}
+Para asegurar un producto funcional en el semestre, el alcance se limita a \textbf{tres órganos}, uno por integrante. Se eligieron por su geometría sencilla (pueden construirse a partir de esferas, cápsulas y curvas), por pertenecer a sistemas distintos y por su valor didáctico.
+
+\begin{table}[h]
+\centering
+\small
+\rowcolors{2}{gray!10}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright}p{2.4cm} >{\raggedright}p{2.2cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{3.4cm}}
+\toprule
+\textbf{Responsable} & \textbf{Órgano (sistema)} & \textbf{Estructuras a modelar} & \textbf{Interacción especial} \\
+\midrule
+Germán Cáceres & Ojo -- \emph{ñawi} (sensorial) & Esclerótica, córnea, iris, pupila, cristalino, humor vítreo, retina y nervio óptico & Vista explosionada por capas \\
+Carlos Rivera & Pulmones -- \emph{surku} (respiratorio) & Pulmón derecho (3 lóbulos), pulmón izquierdo (2 lóbulos), tráquea, bronquios principales y diafragma & Animación de respiración \\
+Samir Mideros & Riñón -- \emph{rurun} (urinario) & Corteza, médula (pirámides renales), pelvis renal, arteria y vena renal, uréter & Corte transversal interactivo \\
+\bottomrule
+\end{tabularx}
+\caption{Alcance del prototipo: órganos y responsables.}
+\end{table}
+
+Cada integrante modela su órgano en Blender y desarrolla su estación en Unity; el laboratorio común (escena, menús, localización y accesibilidad) se construye de forma conjunta.
+
+\textbf{Fuera del alcance de esta versión:} corazón, cerebro, sistema esquelético y muscular completos, simulaciones fisiológicas complejas, modo multijugador y evaluación clínica. Estos elementos se consideran trabajo futuro.
+
+\subsection{¿Cómo funcionará?}
+\begin{enumerate}
+    \item El usuario elige el idioma (español o kichwa) y las opciones de accesibilidad en el menú inicial.
+    \item En el laboratorio, selecciona un órgano en la mesa de estudio.
+    \item Manipula el órgano: agarrar, rotar, escalar y activar la vista explosionada, el corte o la animación.
+    \item Al señalar una estructura, se resalta y se muestra su nombre bilingüe; puede escuchar su descripción.
+    \item Opcionalmente, resuelve un cuestionario corto de identificación de estructuras.
+\end{enumerate}
+
+\subsection{Tecnologías}
+\begin{itemize}
+    \item \textbf{Blender 4.x:} modelado, texturizado y animación de los órganos; exportación en formato FBX/glTF.
+    \item \textbf{Unity 6 (LTS):} motor del laboratorio, con \textbf{XR Interaction Toolkit} y \textbf{OpenXR}.
+    \item \textbf{Meta Quest 2/3} como visor objetivo y \textbf{XR Device Simulator} para el modo de escritorio.
+    \item \textbf{Unity Localization} para la gestión de textos en español y kichwa.
+    \item \textbf{Git y GitHub} para el control de versiones y el trabajo colaborativo.
+    \item \textbf{Z-Anatomy / BodyParts3D} (licencias abiertas) como referencia anatómica \cite{bodyparts3d}.
+\end{itemize}
+
+% ============================================================
+\section{Componente de interculturalidad}
+% ============================================================
+\begin{itemize}
+    \item \textbf{Grupo cultural beneficiado:} estudiantes de los pueblos y nacionalidades kichwa del Ecuador, sin dejar de lado a los estudiantes hispanohablantes.
+    \item \textbf{Respeto a la diversidad cultural:} todos los textos, etiquetas y narraciones estarán disponibles en español y kichwa, con el mismo nivel de detalle en ambos idiomas; el kichwa no será una traducción secundaria ni incompleta.
+    \item \textbf{Prevención de sesgos y estereotipos:} no se usarán vestimentas, rostros ni símbolos culturales como decoración. Los términos en kichwa (por ejemplo \emph{ñawi}, \emph{surku}, \emph{rurun}) se validarán con un hablante nativo o docente de Educación Intercultural Bilingüe y con el diccionario oficial del Ministerio de Educación \cite{kichwa}.
+    \item \textbf{Representación adecuada de la información:} el contenido anatómico será científico y neutral. Cuando un término no tenga equivalente en kichwa, se indicará de forma explícita y se mantendrá el término técnico en español, sin inventar palabras.
+\end{itemize}
+
+% ============================================================
+\section{Componente de accesibilidad e inclusión}
+% ============================================================
+\begin{description}
+    \item[Accesibilidad visual:] paneles con contraste de al menos 4.5:1 \cite{wcag22}, tamaño de texto ajustable, colores de resaltado distinguibles para personas con daltonismo (apoyados por contornos, no solo por color) y narración por voz de todas las fichas.
+    \item[Accesibilidad auditiva:] subtítulos sincronizados de toda narración, indicadores visuales y vibración de los controles en lugar de señales solo sonoras.
+    \item[Accesibilidad cognitiva:] lenguaje claro y frases cortas, un solo órgano a la vez, tutorial guiado al inicio y navegación de máximo dos niveles de menú.
+    \item[Accesibilidad motora:] modo sentado, ajuste de la altura de la mesa, interacción a distancia por rayo (sin necesidad de alcanzar objetos), botones de gran tamaño, teletransporte en lugar de desplazamiento continuo para reducir el mareo, y modo de escritorio con teclado y ratón para usuarios sin visor.
+\end{description}
+
+% ============================================================
+\section{Resultados esperados}
+% ============================================================
+\begin{itemize}
+    \item Tres modelos 3D (ojo, pulmones y riñón) optimizados para RV, con sus estructuras separadas.
+    \item Prototipo funcional del laboratorio en Unity, ejecutable en Meta Quest y en modo de escritorio.
+    \item Glosario bilingüe español--kichwa de las estructuras anatómicas, validado.
+    \item Manual de usuario.
+    \item Informe de evaluación de usabilidad (SUS).
+    \item Informe final del proyecto y repositorio en GitHub.
+\end{itemize}
+
+% ============================================================
+\section{Cronograma inicial}
+% ============================================================
+\begin{table}[h]
+\centering
+\rowcolors{2}{gray!10}{white}
+\begin{tabular}{l c c c c}
+\toprule
+\textbf{Actividad} & \textbf{Mes 1} & \textbf{Mes 2} & \textbf{Mes 3} & \textbf{Mes 4} \\
+\midrule
+Investigación y definición del alcance & X & & & \\
+Diseño (bocetos, glosario bilingüe, interfaz) & X & X & & \\
+Modelado de órganos en Blender & & X & & \\
+Desarrollo del laboratorio en Unity & & X & X & \\
+Localización y accesibilidad & & & X & \\
+Pruebas de usabilidad & & & X & X \\
+Presentación final & & & & X \\
+\bottomrule
+\end{tabular}
+\caption{Cronograma inicial del proyecto.}
+\end{table}
+
+% ============================================================
+\section{Bibliografía inicial}
+% ============================================================
+\begingroup
+\renewcommand{\section}[2]{}
+\begin{thebibliography}{9}
+\bibitem{moro2017} Moro, C., Štromberga, Z., Raikos, A. y Stirling, A. (2017). The effectiveness of virtual and augmented reality in health sciences and medical anatomy. \emph{Anatomical Sciences Education}, 10(6), 549--559.
+\bibitem{bodyparts3d} Mitsuhashi, N., Fujieda, K., Tamura, T., Kawamoto, S., Takagi, T. y Okubo, K. (2009). BodyParts3D: 3D structure database for anatomical concepts. \emph{Nucleic Acids Research}, 37, D782--D785.
+\bibitem{wcag22} World Wide Web Consortium (W3C). (2023). \emph{Web Content Accessibility Guidelines (WCAG) 2.2}. \url{https://www.w3.org/TR/WCAG22/}
+\bibitem{iso9241} International Organization for Standardization. (2019). \emph{ISO 9241-210:2019. Ergonomics of human-system interaction -- Part 210: Human-centred design for interactive systems}.
+\bibitem{unityxr} Unity Technologies. (2026). \emph{XR Interaction Toolkit documentation}. \url{https://docs.unity3d.com/Packages/com.unity.xr.interaction.toolkit@latest}
+\bibitem{blender} Blender Foundation. (2026). \emph{Blender Reference Manual}. \url{https://docs.blender.org/manual/es/latest/}
+\bibitem{kichwa} Ministerio de Educación del Ecuador. (2009). \emph{Kichwa Yachakukkunapak Shimiyuk Kamu: diccionario kichwa--castellano}. Quito: DINEIB.
+\bibitem{constitucion} Asamblea Constituyente. (2008). \emph{Constitución de la República del Ecuador}, art. 1 y art. 2.
+\end{thebibliography}
+\endgroup
+
+\end{document}
