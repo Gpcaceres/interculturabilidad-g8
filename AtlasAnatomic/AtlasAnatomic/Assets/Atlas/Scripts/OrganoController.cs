@@ -233,6 +233,57 @@ namespace AtlasAnatomico
             ActualizarMateriales();
         }
 
+        /// <summary>Caja que ocupa la pieza en el mundo (para colocar su etiqueta).</summary>
+        public Bounds LimitesDe(int indice)
+        {
+            var p = m_Piezas[indice];
+            var caja = new Bounds(p.t.position, Vector3.zero);
+            foreach (var r in p.renderers) caja.Encapsulate(r.bounds);
+            return caja;
+        }
+
+        /// <summary>Índice de la pieza a la que pertenece <paramref name="t"/>, o -1 si no es una pieza.</summary>
+        public int IndiceDe(Transform t)
+        {
+            for (int i = 0; i < m_Piezas.Count; i++)
+                if (t == m_Piezas[i].t || t.IsChildOf(m_Piezas[i].t)) return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// Pieza más cercana que atraviesa el rayo, o -1. Funciona en cualquier vista:
+        /// activa un momento los colliders de las piezas (en la vista completa están apagados).
+        /// </summary>
+        public int PiezaBajoRayo(Ray rayo, float distancia = 20f)
+        {
+            var encendidos = new List<Collider>();
+            foreach (var p in m_Piezas)
+                foreach (var col in p.colliders)
+                    if (!col.enabled) { col.enabled = true; encendidos.Add(col); }
+            bool agarre = colliderAgarre != null && colliderAgarre.enabled;
+            if (agarre) colliderAgarre.enabled = false;
+
+            int indice = -1;
+            float masCerca = float.MaxValue;
+            foreach (var hit in Physics.RaycastAll(rayo, distancia))
+            {
+                int i = IndiceDe(hit.collider.transform);
+                if (i >= 0 && hit.distance < masCerca) { masCerca = hit.distance; indice = i; }
+            }
+
+            foreach (var col in encendidos) col.enabled = false;
+            if (agarre) colliderAgarre.enabled = true;
+            return indice;
+        }
+
+        /// <summary>Gira el órgano según un arrastre en pantalla (modo de escritorio).</summary>
+        public void Girar(Vector2 grados, Transform camara)
+        {
+            m_RotacionObjetivo = null;
+            transform.Rotate(camara.up, -grados.x, Space.World);
+            transform.Rotate(camara.right, grados.y, Space.World);
+        }
+
         public void CambiarTamano(float factor)
         {
             var s = Mathf.Clamp(transform.localScale.x * factor, m_EscalaBase * 0.3f, m_EscalaBase * 4f);

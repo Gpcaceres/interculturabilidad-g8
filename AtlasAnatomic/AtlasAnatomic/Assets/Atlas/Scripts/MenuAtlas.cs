@@ -20,6 +20,8 @@ namespace AtlasAnatomico
         [Tooltip("Metros por píxel del panel.")]
         public float escalaPanel = 0.0006f;
         public float anchoPx = 560f;
+        [Tooltip("Metros que el panel se aleja del usuario respecto al punto junto al órgano.")]
+        public float alejamiento = 0.3f;
 
         // Paleta
         static readonly Color cFondo = new Color(0.07f, 0.09f, 0.13f, 0.94f);
@@ -30,6 +32,9 @@ namespace AtlasAnatomico
         static readonly Color cTexto = new Color(0.94f, 0.95f, 0.97f, 1f);
         static readonly Color cTenue = new Color(0.65f, 0.70f, 0.78f, 1f);
 
+        /// <summary>True si el usuario movió el panel: entonces no se recoloca solo al cambiar de vista.</summary>
+        public bool MovidoAMano { get; set; }
+
         RectTransform m_Panel;
         readonly List<(TMP_Text t, float tam)> m_Textos = new List<(TMP_Text, float)>();
         float m_EscalaTexto = 1f;
@@ -39,7 +44,7 @@ namespace AtlasAnatomico
         GameObject m_GrupoDesglose, m_GrupoPartes, m_GrupoInfo;
         Slider m_Slider;
         TMP_Text m_Ayuda, m_InfoNombre, m_InfoKichwa, m_InfoTunica, m_InfoDescripcion, m_InfoDato, m_TextoTunicas;
-        Image m_BotonTunicas;
+        Image m_BotonTunicas, m_BotonEtiquetas;
 
         IEnumerator Start()
         {
@@ -47,7 +52,12 @@ namespace AtlasAnatomico
             Construir();
             if (organo != null)
             {
-                organo.ModoCambiado += _ => Refrescar();
+                organo.ModoCambiado += _ =>
+                {
+                    Refrescar();
+                    // La vista desglosada es más ancha: apartar el panel para que no tape las piezas.
+                    if (!MovidoAMano) StartCoroutine(ColocarLuego());
+                };
                 organo.ParteSeleccionada += _ => Refrescar();
             }
             Refrescar();
@@ -61,6 +71,8 @@ namespace AtlasAnatomico
             var cam = Camera.main;
             if (cam == null || organo == null) return;
             var pos = organo.PuntoParaMenu(cam.transform.position);
+            // Alejarlo en la misma dirección: se ve en el mismo sitio, pero más pequeño y completo.
+            pos += (pos - cam.transform.position).normalized * alejamiento;
             transform.position = pos;
             var mirar = pos - cam.transform.position;
             mirar.y *= 0.3f;
@@ -145,8 +157,14 @@ namespace AtlasAnatomico
             // Utilidades
             Titulo(m_Panel, "Ajustes");
             var filaUtil = Fila(m_Panel, 54);
-            Boton(filaUtil, "Traer aquí", () => { organo?.TraerFrenteAlUsuario(); StartCoroutine(ColocarLuego()); });
-            Boton(filaUtil, "Reiniciar", () => { organo?.Reiniciar(); StartCoroutine(ColocarLuego()); });
+            Boton(filaUtil, "Traer aquí", () => { MovidoAMano = false; organo?.TraerFrenteAlUsuario(); StartCoroutine(ColocarLuego()); });
+            Boton(filaUtil, "Reiniciar", () => { MovidoAMano = false; organo?.Reiniciar(); StartCoroutine(ColocarLuego()); });
+            m_BotonEtiquetas = Boton(filaUtil, "Etiquetas", () =>
+            {
+                var etiquetas = organo != null ? organo.GetComponent<EtiquetasOrgano>() : null;
+                etiquetas?.Alternar();
+                Refrescar();
+            });
             var filaTam = Fila(m_Panel, 54);
             Boton(filaTam, "Tamaño −", () => organo?.CambiarTamano(1f / 1.25f));
             Boton(filaTam, "Tamaño +", () => organo?.CambiarTamano(1.25f));
@@ -158,6 +176,11 @@ namespace AtlasAnatomico
             var le = asa.gameObject.AddComponent<LayoutElement>();
             le.preferredHeight = 16; le.preferredWidth = 220; le.flexibleWidth = 0;
             vl.childAlignment = TextAnchor.UpperCenter;
+            // Rueda del ratón sobre el panel: agrandarlo para leer (modo de escritorio).
+            var ampliable = gameObject.AddComponent<AmpliableConRueda>();
+            ampliable.zona = m_Panel;
+            ampliable.maximo = 2.5f;
+
             var colAsa = asa.gameObject.AddComponent<BoxCollider>();
             StartCoroutine(AjustarColliderAsa(asa, colAsa));
 
@@ -166,6 +189,7 @@ namespace AtlasAnatomico
             rb.useGravity = false;
             // Al añadirse, el XRGrabInteractable toma los colliders hijos: solo existe el del asa.
             var agarre = gameObject.AddComponent<XRGrabInteractable>();
+            agarre.selectEntered.AddListener(_ => MovidoAMano = true);
             agarre.movementType = XRBaseInteractable.MovementType.Instantaneous;
             agarre.throwOnDetach = false;
             agarre.useDynamicAttach = true;
@@ -209,6 +233,8 @@ namespace AtlasAnatomico
                 m_BotonesParte[i].color = i == organo.Seleccion ? cActivo : cBoton;
 
             m_BotonTunicas.color = organo.ColorTunicas ? cActivo : cBoton;
+            var etiquetas = organo.GetComponent<EtiquetasOrgano>();
+            m_BotonEtiquetas.color = etiquetas != null && etiquetas.Visibles ? cActivo : cBoton;
             m_TextoTunicas.gameObject.SetActive(organo.ColorTunicas);
 
             if (organo.Seleccion >= 0 && organo.Seleccion < partes.Count)
