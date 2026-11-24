@@ -31,6 +31,23 @@ namespace AtlasAnatomico
         [Tooltip("Pieza cuyo lado marca el frente del órgano.")]
         public string piezaFrontal = "Cornea";
         public List<ParteAnatomica> partes = new List<ParteAnatomica>();
+        [Tooltip("Título de la lista de piezas en el menú.")]
+        public string tituloPartes = "Partes del ojo";
+        [Tooltip("Cómo se llama el grupo de cada pieza: «Túnica» en el ojo, «Grupo» en otros órganos.")]
+        public string nombreGrupo = "Túnica";
+        [Tooltip("Texto del botón que colorea los grupos.")]
+        public string textoColorear = "Colorear túnicas";
+
+        [Header("Desglose")]
+        [Tooltip("Desactivado: en línea, sobre el eje frontal (ojo). Activado: cada pieza según su campo «desglose».")]
+        public bool desgloseRadial;
+        [Tooltip("Frente del órgano en su espacio local; cero = se deduce de las piezas central y frontal.")]
+        public Vector3 frenteLocal;
+        [Tooltip("Giro respecto al usuario en la vista completa y en las demás.")]
+        public float anguloCompleta = -30f;
+        public float anguloDesglose = 70f;
+        [Tooltip("Distancia lateral del menú, en tamaños del órgano: vista completa y las demás.")]
+        public Vector2 factorMenu = new Vector2(1.6f, 3.4f);
 
         [Header("Presentación en RA")]
         [Tooltip("Tamaño en metros con el que se muestra (el ojo real mide 0,024 m).")]
@@ -43,6 +60,8 @@ namespace AtlasAnatomico
         [Header("Materiales")]
         [Tooltip("Material transparente para atenuar las piezas no seleccionadas.")]
         public Material materialFantasma;
+        [Tooltip("Material translúcido de las envolturas con «Ver por dentro».")]
+        public Material materialPorDentro;
         [Tooltip("Collider esférico para agarrar el órgano completo.")]
         public Collider colliderAgarre;
 
@@ -51,6 +70,10 @@ namespace AtlasAnatomico
             { "Fibrosa", new Color(0.25f, 0.55f, 0.95f) },
             { "Vascular", new Color(0.85f, 0.20f, 0.25f) },
             { "Nerviosa", new Color(0.98f, 0.80f, 0.15f) },
+            { "Vía aérea", new Color(0.98f, 0.80f, 0.15f) },
+            { "Pulmón derecho", new Color(0.25f, 0.55f, 0.95f) },
+            { "Pulmón izquierdo", new Color(0.20f, 0.75f, 0.60f) },
+            { "Músculo respiratorio", new Color(0.85f, 0.20f, 0.25f) },
         };
 
         public event Action<ModoVista> ModoCambiado;
@@ -59,6 +82,9 @@ namespace AtlasAnatomico
         public ModoVista Modo { get; private set; } = ModoVista.Completa;
         public int Seleccion { get; private set; } = -1;
         public bool ColorTunicas { get; private set; }
+        public bool PorDentro { get; private set; }
+        /// <summary>Separación actual (animada) de las piezas, 0–1.</summary>
+        public float SeparacionActual => m_Separacion;
         public float Separacion => m_SeparacionObjetivo;
 
         class Pieza
@@ -108,8 +134,12 @@ namespace AtlasAnatomico
                 {
                     var baseMat = pieza.renderers[0].sharedMaterial;
                     pieza.resaltado = Clonar(baseMat, c => Color.Lerp(c, Color.white, 0.35f), 1f);
+                    // Con textura el color base ya es blanco: se resalta con un brillo propio.
+                    if (pieza.resaltado != null && pieza.resaltado.IsKeywordEnabled("_EMISSION"))
+                        pieza.resaltado.SetColor("_EmissionColor", new Color(0.10f, 0.22f, 0.38f));
                     var colorTunica = ColoresTunica.TryGetValue(p.tunica ?? "", out var ct) ? ct : (Color?)null;
                     pieza.tunica = colorTunica.HasValue ? Clonar(baseMat, _ => colorTunica.Value, 1f) : null;
+                    if (pieza.tunica != null && pieza.tunica.HasProperty("_BaseMap")) pieza.tunica.SetTexture("_BaseMap", null);
                 }
                 var interactuable = t.GetComponent<XRSimpleInteractable>();
                 if (interactuable != null)
@@ -138,6 +168,7 @@ namespace AtlasAnatomico
                 var d = frontal.posInicial - central.posInicial;
                 if (d.sqrMagnitude > 1e-10f) m_EjeFrontal = d.normalized;
             }
+            if (frenteLocal.sqrMagnitude > 1e-6f) m_EjeFrontal = frenteLocal.normalized;
 
             if (tamanoModelo > 0f) m_EscalaBase = tamanoMostrado / tamanoModelo;
             transform.localScale = Vector3.one * m_EscalaBase;
@@ -170,7 +201,9 @@ namespace AtlasAnatomico
                     ? m_SeparacionObjetivo : Mathf.Lerp(m_Separacion, m_SeparacionObjetivo, k);
                 foreach (var p in m_Piezas)
                 {
-                    var desplazamiento = -p.datos.paso * m_Paso * m_Separacion * m_EjeFrontal;
+                    var desplazamiento = desgloseRadial
+                        ? p.datos.desglose * m_Separacion
+                        : -p.datos.paso * m_Paso * m_Separacion * m_EjeFrontal;
                     p.t.position = transform.TransformPoint(p.posInicial + desplazamiento);
                 }
             }
@@ -230,6 +263,13 @@ namespace AtlasAnatomico
         public void AlternarColorTunicas()
         {
             ColorTunicas = !ColorTunicas;
+            ActualizarMateriales();
+        }
+
+        /// <summary>Vuelve translúcidas las envolturas para ver lo que hay debajo.</summary>
+        public void AlternarPorDentro()
+        {
+            PorDentro = !PorDentro;
             ActualizarMateriales();
         }
 
@@ -294,6 +334,7 @@ namespace AtlasAnatomico
         {
             transform.localScale = Vector3.one * m_EscalaBase;
             ColorTunicas = false;
+            PorDentro = false;
             Seleccionar(-1);
             AplicarModo(ModoVista.Completa, true);
             TraerFrenteAlUsuario();
@@ -319,7 +360,7 @@ namespace AtlasAnatomico
             var centro = m_PosicionObjetivo ?? transform.position;
             var haciaCam = Vector3.ProjectOnPlane(posicionCamara - centro, Vector3.up).normalized;
             var derecha = Vector3.Cross(haciaCam, Vector3.up);   // derecha vista por el usuario
-            float ancho = tamanoMostrado * (Modo == ModoVista.Completa ? 1.6f : 3.4f);
+            float ancho = tamanoMostrado * (Modo == ModoVista.Completa ? factorMenu.x : factorMenu.y);
             return centro + derecha * ancho + haciaCam * 0.15f;
         }
 
@@ -364,8 +405,8 @@ namespace AtlasAnatomico
 
         /// <summary>
         /// Completa: el frente mira al usuario girado 30° (vista de tres cuartos).
-        /// Desglosada/Informativa: el eje queda de lado, con la córnea a la izquierda del usuario,
-        /// para que las capas se separen a lo ancho como en las láminas de referencia.
+        /// Desglosada/Informativa: según anguloDesglose. En el ojo, el eje queda de lado con la córnea
+        /// a la izquierda del usuario, para que las capas se separen a lo ancho.
         /// </summary>
         Quaternion RotacionParaModo(Vector3 posicionOrgano, Vector3 posicionCamara)
         {
@@ -373,8 +414,8 @@ namespace AtlasAnatomico
             if (haciaCam.sqrMagnitude < 1e-6f) haciaCam = Vector3.back;
             haciaCam.Normalize();
             Vector3 destino = Modo == ModoVista.Completa
-                ? Quaternion.AngleAxis(-30f, Vector3.up) * haciaCam
-                : Quaternion.AngleAxis(70f, Vector3.up) * haciaCam;    // córnea hacia la izquierda del usuario
+                ? Quaternion.AngleAxis(anguloCompleta, Vector3.up) * haciaCam
+                : Quaternion.AngleAxis(anguloDesglose, Vector3.up) * haciaCam;
 
             var arribaLocal = Mathf.Abs(Vector3.Dot(m_EjeFrontal, Vector3.up)) > 0.9f ? Vector3.forward : Vector3.up;
             var desdeModelo = Quaternion.LookRotation(m_EjeFrontal, arribaLocal);
@@ -393,6 +434,7 @@ namespace AtlasAnatomico
                     Material m;
                     if (atenuar && i != Seleccion && materialFantasma != null) m = materialFantasma;
                     else if (i == Seleccion && Modo != ModoVista.Completa && p.resaltado != null) m = p.resaltado;
+                    else if (PorDentro && p.datos.envoltura && materialPorDentro != null) m = materialPorDentro;
                     else if (ColorTunicas && p.tunica != null) m = p.tunica;
                     else { p.renderers[r].sharedMaterials = p.originales[r]; continue; }
                     var mats = new Material[p.originales[r].Length];
@@ -407,6 +449,9 @@ namespace AtlasAnatomico
             if (colliderAgarre is SphereCollider esfera && referencia != null && referencia.renderers.Length > 0)
             {
                 var b = referencia.renderers[0].bounds;
+                if (desgloseRadial)   // sin envoltura única: la esfera rodea todas las piezas
+                    foreach (var p in m_Piezas)
+                        foreach (var r in p.renderers) b.Encapsulate(r.bounds);
                 esfera.center = transform.InverseTransformPoint(b.center);
                 esfera.radius = transform.InverseTransformVector(b.extents).magnitude / Mathf.Sqrt(3f) * 1.1f;
             }

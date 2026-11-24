@@ -63,6 +63,8 @@ MonoBehaviour:
     descripcion: "Ventana transparente al frente del ojo. Es la lente m\xE1s potente: desv\xEDa la luz hacia dentro."
     dato: "~11,5 mm de di\xE1metro y 0,5 mm de grosor. Aporta cerca de 2/3 del enfoque."
     paso: -4
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
   - id: Iris
     nombre: Iris y pupila
     kichwa: pendiente
@@ -70,6 +72,8 @@ MonoBehaviour:
     descripcion: "M\xFAsculo pigmentado que da color al ojo. Su abertura central, la pupila, regula cu\xE1nta luz entra, como el diafragma de una c\xE1mara."
     dato: La pupila mide ~2 mm con mucha luz y hasta 8 mm con poca.
     paso: -3
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
   - id: Cristalino
     nombre: Cristalino
     kichwa: pendiente
@@ -77,6 +81,8 @@ MonoBehaviour:
     descripcion: "Lente flexible que cambia de forma para enfocar de cerca o de lejos (acomodaci\xF3n)."
     dato: "~9,5 mm de di\xE1metro y 4 mm de grosor. Con la edad se endurece (presbicia) y puede opacarse (catarata)."
     paso: -2
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
   - id: Cuerpo_Ciliar
     nombre: Cuerpo ciliar
     kichwa: pendiente
@@ -84,6 +90,8 @@ MonoBehaviour:
     descripcion: "Anillo muscular que sostiene el cristalino y cambia su forma. Tambi\xE9n produce el humor acuoso."
     dato: "Se une al cristalino por fibras finas: la z\xF3nula de Zinn."
     paso: -1
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
   - id: Humor_Vitreo
     nombre: "Humor v\xEDtreo"
     kichwa: pendiente
@@ -91,6 +99,8 @@ MonoBehaviour:
     descripcion: Gel transparente que llena el interior del ojo y mantiene su forma.
     dato: ~4 ml; ocupa cerca del 80 % del volumen del ojo y es 99 % agua.
     paso: 0
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
   - id: Retina
     nombre: Retina
     kichwa: pendiente
@@ -98,6 +108,8 @@ MonoBehaviour:
     descripcion: Capa sensible a la luz. Sus fotorreceptores convierten la luz en impulsos nerviosos.
     dato: "~120 millones de bastones (poca luz) y 6 millones de conos (color). La f\xF3vea da la visi\xF3n m\xE1s n\xEDtida."
     paso: 1.5
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
   - id: Coroides
     nombre: Coroides
     kichwa: pendiente
@@ -105,6 +117,8 @@ MonoBehaviour:
     descripcion: "Capa llena de vasos sangu\xEDneos que nutre la retina. Su pigmento oscuro absorbe la luz sobrante."
     dato: "Junto con el iris y el cuerpo ciliar forma la \xFAvea."
     paso: 3
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
   - id: Esclerotica
     nombre: "Escler\xF3tica"
     kichwa: pendiente
@@ -112,6 +126,8 @@ MonoBehaviour:
     descripcion: "Capa externa blanca y resistente: protege el ojo y sirve de anclaje a los m\xFAsculos que lo mueven."
     dato: "Es \xABlo blanco del ojo\xBB y cubre ~5/6 del globo."
     paso: 4.5
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
   - id: Nervio_Optico
     nombre: "Nervio \xF3ptico"
     kichwa: pendiente
@@ -119,11 +135,22 @@ MonoBehaviour:
     descripcion: "Lleva las se\xF1ales de la retina al cerebro."
     dato: '~1,2 millones de fibras. Donde sale no hay fotorreceptores: el punto ciego.'
     paso: 4.5
+    desglose: {x: 0, y: 0, z: 0}
+    envoltura: 0
+  tituloPartes: Partes del ojo
+  nombreGrupo: "T\xFAnica"
+  textoColorear: "Colorear t\xFAnicas"
+  desgloseRadial: 0
+  frenteLocal: {x: 0, y: 0, z: 0}
+  anguloCompleta: -30
+  anguloDesglose: 70
+  factorMenu: {x: 1.6, y: 3.4}
   tamanoMostrado: 0.2
   separacionRelativa: 0.45
   distanciaAlUsuario: 0.6
   suavizado: 6
   materialFantasma: {fileID: 2100000, guid: 2d7de5aba688e74459dfe16921e82d4f, type: 2}
+  materialPorDentro: {fileID: 0}
   colliderAgarre: {fileID: 8753500109950329717}
 --- !u!135 &8753500109950329717
 SphereCollider:

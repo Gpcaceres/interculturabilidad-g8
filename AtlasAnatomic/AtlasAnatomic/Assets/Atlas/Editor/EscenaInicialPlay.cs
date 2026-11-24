@@ -21,11 +21,23 @@ namespace AtlasAnatomico.Editor
             set => EditorPrefs.SetBool(Clave, value);
         }
 
-        static EscenaInicialPlay() => EditorApplication.delayCall += Aplicar;
+        static EscenaInicialPlay()
+        {
+            EditorApplication.delayCall += Aplicar;
+            EditorApplication.playModeStateChanged += estado =>
+            {
+                if (estado == PlayModeStateChange.ExitingEditMode || estado == PlayModeStateChange.EnteredEditMode) Aplicar();
+            };
+        }
+
+        /// <summary>El Test Runner entra en Play con su propia escena: si se reemplaza, las pruebas no arrancan.</summary>
+        static bool EnPruebas =>
+            System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-runTests") >= 0 ||
+            EditorSceneManager.GetActiveScene().name.StartsWith("InitTestScene");
 
         static void Aplicar()
         {
-            EditorSceneManager.playModeStartScene = Activo
+            EditorSceneManager.playModeStartScene = Activo && !EnPruebas
                 ? AssetDatabase.LoadAssetAtPath<SceneAsset>(Escena)
                 : null;
         }

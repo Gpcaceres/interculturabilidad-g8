@@ -41,7 +41,7 @@ namespace AtlasAnatomico
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Instalar()
         {
-            foreach (var organo in FindObjectsByType<OrganoController>(FindObjectsSortMode.None))
+            foreach (var organo in FindObjectsByType<OrganoController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (organo.GetComponent<EtiquetasOrgano>() == null)
                     organo.gameObject.AddComponent<EtiquetasOrgano>();
         }
@@ -72,7 +72,10 @@ namespace AtlasAnatomico
 
                 var caja = m_Organo.LimitesDe(i);
                 var tope = caja.center + Vector3.up * caja.extents.y;
-                var pos = tope + Vector3.up * (altura + (i % 2) * alturaFila);
+                var pos = tope + Vector3.up * (m_Organo.desgloseRadial ? altura * 0.35f : altura + (i % 2) * alturaFila);
+                // En el desglose radial, un poco hacia el usuario: que no la tape la pieza vecina.
+                if (m_Organo.desgloseRadial)
+                    pos += (cam.transform.position - pos).normalized * 0.10f;
                 e.raiz.position = pos;
                 var mirar = pos - cam.transform.position;
                 mirar.y = 0f;
@@ -82,6 +85,12 @@ namespace AtlasAnatomico
                 e.linea.SetPosition(1, pos - Vector3.up * 0.008f);
                 e.fondo.color = i == m_Organo.Seleccion ? cActivo : cFondo;
             }
+        }
+
+        void OnDisable()   // al cambiar de órgano
+        {
+            foreach (var e in m_Etiquetas)
+                if (e.raiz != null) e.raiz.gameObject.SetActive(false);
         }
 
         void OnDestroy()

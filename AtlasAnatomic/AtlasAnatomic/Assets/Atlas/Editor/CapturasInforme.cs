@@ -20,6 +20,7 @@ namespace AtlasAnatomico.Editor
         public const string Escena = "Assets/Scenes/AtlasAnatomico.unity";
         const int Ancho = 1920, Alto = 1080;
         const float Fov = 40f;
+        static string s_Carpeta;
         const int CapaCaptura = 31;   // capa libre: la cámara de capturas solo ve esta
         static readonly Color Fondo = new Color(0.20f, 0.22f, 0.26f);
 
@@ -28,6 +29,7 @@ namespace AtlasAnatomico.Editor
         {
             get
             {
+                if (s_Carpeta != null) return s_Carpeta;
                 var env = Environment.GetEnvironmentVariable("ATLAS_CAPTURAS");
                 if (!string.IsNullOrEmpty(env)) return env;
                 return Path.GetFullPath(Path.Combine(Application.dataPath, "../../../Documentartion/Laboratorio 1 2P/Img/capturas"));
@@ -75,6 +77,127 @@ namespace AtlasAnatomico.Editor
             Debug.Log("[Atlas] Capturas guardadas en " + Carpeta);
         }
 
+        /// <summary>
+        /// Recorre los pulmones como lo haría un usuario, comprueba que la respiración y el aire
+        /// funcionan y guarda las capturas en Modelado/pulmones/previews/unity.
+        /// </summary>
+        public static IEnumerator CapturarPulmones()
+        {
+            s_Carpeta = Path.GetFullPath(Path.Combine(Application.dataPath, "../../../Modelado/pulmones/previews/unity"));
+            Directory.CreateDirectory(Carpeta);
+            yield return new WaitForSeconds(2.5f);
+            var menu = UnityEngine.Object.FindAnyObjectByType<MenuAtlas>();
+            Exigir(menu != null && menu.organos.Count == 2, "El menú no tiene los dos órganos.");
+            var ojo = menu.organos[0];
+            var organo = menu.organos[1];
+            menu.CambiarOrgano(organo);
+            yield return new WaitForSeconds(2.5f);
+            Exigir(!ojo.gameObject.activeSelf && organo.gameObject.activeSelf, "No se cambió de órgano.");
+            Exigir(organo.Partes.Count == 8, $"Se esperaban 8 piezas y hay {organo.Partes.Count}.");
+
+            var resp = organo.GetComponent<Respiracion>();
+            Exigir(resp.MallasAnimadas == 7, $"Se esperaban 7 piezas que respiran y hay {resp.MallasAnimadas}.");
+            Exigir(organo.GetComponent<FlujoAire>().Recorridos > 50, "Faltan los recorridos del aire.");
+
+            // La respiración se mueve sola y el diafragma baja al inhalar.
+            float min = 1f, max = 0f;
+            for (float t = 0f; t < 5f; t += Time.deltaTime)
+            {
+                min = Mathf.Min(min, resp.Aire);
+                max = Mathf.Max(max, resp.Aire);
+                yield return null;
+            }
+            Exigir(max - min > 0.5f, $"La respiración no se anima ({min:F2}-{max:F2}).");
+            int diafragma = IndiceDe(organo, "Diafragma");
+            resp.enabled = false;
+            resp.Aplicar(0f);
+            float arriba = MasAlto(organo, diafragma);
+            yield return Foto("01-completa-espirado", organo, menu, true);
+            resp.Aplicar(1f);
+            float abajo = MasAlto(organo, diafragma);
+            yield return Foto("02-completa-inspirado", organo, menu, false);
+            Debug.Log($"[Atlas] El diafragma baja {(arriba - abajo) * 1000f:F1} mm.");
+            Exigir(arriba - abajo > 0.003f, $"El diafragma no baja al inhalar ({arriba - abajo:F4} m).");
+            resp.enabled = true;
+
+            organo.AlternarPorDentro();
+            for (float t = 0f; t < 6f && resp.Caudal < 0.4f; t += Time.deltaTime) yield return null;
+            yield return new WaitForSeconds(0.45f);
+            yield return Foto("03-por-dentro-inhala", organo, menu, false);
+            int azules = Contar("03-por-dentro-inhala", c => c.b > c.r + 0.2f && c.b > 0.6f);
+            for (float t = 0f; t < 6f && resp.Caudal > -0.3f; t += Time.deltaTime) yield return null;
+            yield return new WaitForSeconds(0.5f);
+            yield return Foto("04-por-dentro-exhala", organo, menu, false);
+            // El aire tiene que verse: azul sobre la tráquea al inhalar, y no al exhalar.
+            int azulesAlExhalar = Contar("04-por-dentro-exhala", c => c.b > c.r + 0.2f && c.b > 0.6f);
+            Debug.Log($"[Atlas] Píxeles azules: {azules} al inhalar, {azulesAlExhalar} al exhalar.");
+            Exigir(azules > azulesAlExhalar + 600, $"No se ve el flujo de aire ({azules} frente a {azulesAlExhalar} píxeles).");
+            var flujo = organo.GetComponentInChildren<ParticleSystem>();
+            var particulas = new ParticleSystem.Particle[1000];
+            int n = flujo.GetParticles(particulas), dentro = 0;
+            var caja = organo.LimitesDe(0);
+            for (int i = 1; i < organo.Partes.Count; i++) caja.Encapsulate(organo.LimitesDe(i));
+            caja.Expand(0.01f);
+            for (int i = 0; i < n; i++)
+                if (caja.Contains(flujo.transform.TransformPoint(particulas[i].position))) dentro++;
+            Exigir(n > 100 && dentro == n, $"Partículas fuera de los pulmones: {n - dentro} de {n}.");
+            organo.AlternarPorDentro();
+
+            organo.CambiarModo(ModoVista.Desglosada);
+            yield return Recolocar(organo, menu);
+            yield return Foto("05-desglosada", organo, menu, true);
+
+            organo.CambiarModo(ModoVista.Informativa);
+            organo.Seleccionar(IndiceDe(organo, "Pulmon_Izq_Lobulo_Sup"));
+            yield return Recolocar(organo, menu);
+            yield return Foto("06-informativa", organo, menu, true);
+            yield return FotoPanel("06b-panel", organo, menu);
+
+            organo.Seleccionar(-1);
+            organo.CambiarModo(ModoVista.Desglosada);
+            organo.AlternarColorTunicas();
+            yield return Recolocar(organo, menu);
+            yield return Foto("07-grupos", organo, menu, true);
+
+            // Volver al ojo: debe seguir funcionando.
+            menu.CambiarOrgano(ojo);
+            yield return new WaitForSeconds(2.5f);
+            Exigir(ojo.gameObject.activeSelf && !organo.gameObject.activeSelf, "No se volvió al ojo.");
+            yield return Foto("08-vuelta-al-ojo", ojo, menu, true);
+            s_Carpeta = null;
+        }
+
+        /// <summary>Punto más alto de una pieza ya deformada por sus blend shapes.</summary>
+        static float MasAlto(OrganoController organo, int indice)
+        {
+            var id = organo.prefijo + organo.Partes[indice].id;
+            foreach (var malla in organo.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (malla.name != id) continue;
+                var m = new Mesh();
+                malla.BakeMesh(m, true);
+                float alto = float.MinValue;
+                foreach (var v in m.vertices) alto = Mathf.Max(alto, malla.transform.TransformPoint(v).y);
+                return alto;
+            }
+            throw new Exception("[Atlas] No es una malla con blend shapes: " + id);
+        }
+
+        static int Contar(string nombre, Func<Color, bool> cumple)
+        {
+            var tex = new Texture2D(2, 2);
+            tex.LoadImage(File.ReadAllBytes(Path.Combine(Carpeta, nombre + ".png")));
+            int n = 0;
+            foreach (var c in tex.GetPixels()) if (cumple(c)) n++;
+            UnityEngine.Object.Destroy(tex);
+            return n;
+        }
+
+        static void Exigir(bool condicion, string mensaje)
+        {
+            if (!condicion) throw new Exception("[Atlas] " + mensaje);
+        }
+
         static int IndiceDe(OrganoController organo, string id)
         {
             var partes = organo.Partes;
@@ -100,7 +223,7 @@ namespace AtlasAnatomico.Editor
 
             var caja = new Bounds(organo.transform.position, Vector3.zero);
             foreach (var r in organo.GetComponentsInChildren<Renderer>())
-                caja.Encapsulate(r.bounds);
+                if (!(r is ParticleSystemRenderer)) caja.Encapsulate(r.bounds);
             if (conMenu)
                 foreach (var e in EsquinasPanel(menu)) caja.Encapsulate(e);
 
@@ -151,6 +274,10 @@ namespace AtlasAnatomico.Editor
             foreach (var t in organo.GetComponentsInChildren<Transform>(true)) capas[t.gameObject] = t.gameObject.layer;
             if (menu != null)
                 foreach (var t in menu.GetComponentsInChildren<Transform>(true)) capas[t.gameObject] = t.gameObject.layer;
+            // Las etiquetas y la ventana de la pieza viven fuera de la jerarquía del órgano.
+            foreach (var c in UnityEngine.Object.FindObjectsByType<AmpliableConRueda>(FindObjectsSortMode.None))
+                if (c.GetComponent<MenuAtlas>() == null)
+                    foreach (var t in c.GetComponentsInChildren<Transform>(true)) capas[t.gameObject] = t.gameObject.layer;
             foreach (var g in capas.Keys) g.layer = CapaCaptura;
 
             var go = new GameObject("Camara capturas");

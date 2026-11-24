@@ -17,6 +17,8 @@ namespace AtlasAnatomico
     public class MenuAtlas : MonoBehaviour
     {
         public OrganoController organo;
+        [Tooltip("Órganos disponibles; solo el elegido está activo.")]
+        public List<OrganoController> organos = new List<OrganoController>();
         [Tooltip("Metros por píxel del panel.")]
         public float escalaPanel = 0.0006f;
         public float anchoPx = 560f;
@@ -45,25 +47,50 @@ namespace AtlasAnatomico
         Slider m_Slider;
         TMP_Text m_Ayuda, m_InfoNombre, m_InfoKichwa, m_InfoTunica, m_InfoDescripcion, m_InfoDato, m_TextoTunicas;
         Image m_BotonTunicas, m_BotonEtiquetas;
+        readonly Dictionary<OrganoController, Image> m_BotonesOrgano = new Dictionary<OrganoController, Image>();
+        RectTransform m_ContenidoPartes;
+        TMP_Text m_TituloPartes, m_EtiquetaTunicas;
+        GameObject m_GrupoRespiracion;
+        readonly Dictionary<RitmoRespiracion, Image> m_BotonesRitmo = new Dictionary<RitmoRespiracion, Image>();
+        Image m_BotonPorDentro, m_BotonAire;
 
         IEnumerator Start()
         {
             if (organo == null) organo = FindAnyObjectByType<OrganoController>();
+            if (organos.Count == 0 && organo != null) organos.Add(organo);
             Construir();
-            if (organo != null)
+            foreach (var o in organos)
             {
-                organo.ModoCambiado += _ =>
+                var este = o;
+                o.ModoCambiado += _ =>
                 {
                     Refrescar();
                     // La vista desglosada es más ancha: apartar el panel para que no tape las piezas.
-                    if (!MovidoAMano) StartCoroutine(ColocarLuego());
+                    if (!MovidoAMano && este == organo) StartCoroutine(ColocarLuego());
                 };
-                organo.ParteSeleccionada += _ => Refrescar();
+                o.ParteSeleccionada += _ => Refrescar();
             }
             Refrescar();
             yield return new WaitForSeconds(0.7f);
             Colocar();
         }
+
+        /// <summary>Cambia el órgano que se muestra.</summary>
+        public void CambiarOrgano(OrganoController nuevo)
+        {
+            if (nuevo == null || nuevo == organo) return;
+            if (organo != null) organo.gameObject.SetActive(false);
+            organo = nuevo;
+            organo.gameObject.SetActive(true);
+            organo.Reiniciar();
+            CrearBotonesPartes();
+            MovidoAMano = false;
+            Refrescar();
+            StartCoroutine(ColocarLuego());
+        }
+
+        Respiracion RespiracionActual => organo != null ? organo.GetComponent<Respiracion>() : null;
+        FlujoAire AireActual => organo != null ? organo.GetComponent<FlujoAire>() : null;
 
         /// <summary>Pone el panel junto al órgano, mirando al usuario.</summary>
         public void Colocar()
@@ -109,8 +136,11 @@ namespace AtlasAnatomico
             // Órgano
             Titulo(m_Panel, "Órgano");
             var filaOrg = Fila(m_Panel, 64);
-            Boton(filaOrg, $"{organo?.nombreOrgano ?? "Ojo"}\n<size=70%>{organo?.kichwaOrgano ?? "Ñawi"}</size>", null, true, cActivo);
-            Boton(filaOrg, "Pulmones\n<size=70%>Próximamente</size>", null, false);
+            foreach (var o in organos)
+            {
+                var este = o;
+                m_BotonesOrgano[o] = Boton(filaOrg, $"{o.nombreOrgano}\n<size=70%>{o.kichwaOrgano}</size>", () => CambiarOrgano(este));
+            }
             Boton(filaOrg, "Riñón\n<size=70%>Próximamente</size>", null, false);
 
             // Vista
@@ -133,15 +163,25 @@ namespace AtlasAnatomico
 
             // Piezas
             m_GrupoPartes = Seccion(m_Panel, out var piezas);
-            Texto(piezas, "Partes del ojo", 20, FontStyles.Bold, cTexto);
-            var partes = organo != null ? organo.Partes : (IReadOnlyList<ParteAnatomica>)new List<ParteAnatomica>();
-            RectTransform fila = null;
-            for (int i = 0; i < partes.Count; i++)
+            m_TituloPartes = Texto(piezas, "", 20, FontStyles.Bold, cTexto);
+            m_ContenidoPartes = new GameObject("Botones de piezas", typeof(RectTransform)).GetComponent<RectTransform>();
+            m_ContenidoPartes.SetParent(piezas, false);
+            Vertical(m_ContenidoPartes, 10, new RectOffset(0, 0, 0, 0));
+            CrearBotonesPartes();
+
+            // Respiración (solo órganos que respiran)
+            m_GrupoRespiracion = Seccion(m_Panel, out var resp);
+            Texto(resp, "Respiración", 20, FontStyles.Bold, cTexto);
+            var filaRitmo = Fila(resp, 50);
+            foreach (RitmoRespiracion ritmo in Enum.GetValues(typeof(RitmoRespiracion)))
             {
-                if (i % 3 == 0) fila = Fila(piezas, 54);
-                int indice = i;
-                m_BotonesParte.Add(Boton(fila, partes[i].nombre, () => organo?.Seleccionar(indice), true, null, 19));
+                var este = ritmo;
+                m_BotonesRitmo[ritmo] = Boton(filaRitmo, Respiracion.Nombre(ritmo), () => { RespiracionActual?.CambiarRitmo(este); Refrescar(); }, true, null, 18);
             }
+            var filaDentro = Fila(resp, 50);
+            m_BotonPorDentro = Boton(filaDentro, "Ver por dentro", () => { organo?.AlternarPorDentro(); Refrescar(); });
+            m_BotonAire = Boton(filaDentro, "Flujo de aire", () => { AireActual?.Alternar(); Refrescar(); });
+            Texto(resp, "<color=#4DC7FF>■</color> Entra oxígeno   <color=#FF8C40>■</color> Sale dióxido de carbono", 18, FontStyles.Normal, cTenue);
 
             // Información
             m_GrupoInfo = Seccion(m_Panel, out var info);
@@ -152,7 +192,8 @@ namespace AtlasAnatomico
             m_InfoDato = Texto(info, "", 21, FontStyles.Normal, new Color(0.55f, 0.82f, 1f));
             var filaTun = Fila(info, 50);
             m_BotonTunicas = Boton(filaTun, "Colorear túnicas", () => { organo?.AlternarColorTunicas(); Refrescar(); });
-            m_TextoTunicas = Texto(info, "<color=#408CF2>■</color> Fibrosa   <color=#D9333F>■</color> Vascular   <color=#FACC26>■</color> Nerviosa", 19, FontStyles.Normal, cTenue);
+            m_EtiquetaTunicas = m_BotonTunicas.GetComponentInChildren<TMP_Text>();
+            m_TextoTunicas = Texto(info, "", 19, FontStyles.Normal, cTenue);
 
             // Utilidades
             Titulo(m_Panel, "Ajustes");
@@ -195,6 +236,28 @@ namespace AtlasAnatomico
             agarre.useDynamicAttach = true;
         }
 
+        /// <summary>Un botón por pieza del órgano actual.</summary>
+        void CrearBotonesPartes()
+        {
+            m_Textos.RemoveAll(x => x.t == null || x.t.transform.IsChildOf(m_ContenidoPartes));
+            foreach (Transform hijo in m_ContenidoPartes) Destroy(hijo.gameObject);
+            m_BotonesParte.Clear();
+            if (organo == null) return;
+            m_TituloPartes.text = organo.tituloPartes;
+            var partes = organo.Partes;
+            // Con nombres largos («Lóbulo superior derecho») caben dos por fila.
+            int porFila = 3;
+            foreach (var p in partes) if (p.nombre.Length > 18) porFila = 2;
+            RectTransform fila = null;
+            for (int i = 0; i < partes.Count; i++)
+            {
+                if (i % porFila == 0) fila = Fila(m_ContenidoPartes, 54);
+                int indice = i;
+                m_BotonesParte.Add(Boton(fila, partes[i].nombre, () => organo?.Seleccionar(indice), true, null, 19));
+            }
+            foreach (var (t, tam) in m_Textos) t.fontSize = tam * m_EscalaTexto;
+        }
+
         IEnumerator AjustarColliderAsa(RectTransform asa, BoxCollider col)
         {
             yield return null;   // esperar al layout
@@ -223,7 +286,7 @@ namespace AtlasAnatomico
 
             m_Ayuda.text = modo switch
             {
-                ModoVista.Completa => "Agarra el ojo para girarlo; con dos manos cambias su tamaño.",
+                ModoVista.Completa => "Agarra el órgano para girarlo; con dos manos cambias su tamaño.",
                 ModoVista.Desglosada => "Mueve el deslizador para separar las capas. Apunta a una pieza para resaltarla.",
                 _ => "Elige una pieza para ver su información. Las demás se vuelven transparentes.",
             };
@@ -232,6 +295,18 @@ namespace AtlasAnatomico
             for (int i = 0; i < m_BotonesParte.Count; i++)
                 m_BotonesParte[i].color = i == organo.Seleccion ? cActivo : cBoton;
 
+            foreach (var kv in m_BotonesOrgano)
+                kv.Value.color = kv.Key == organo ? cActivo : cBoton;
+            var respiracion = RespiracionActual;
+            m_GrupoRespiracion.SetActive(respiracion != null);
+            if (respiracion != null)
+                foreach (var kv in m_BotonesRitmo)
+                    kv.Value.color = kv.Key == respiracion.Ritmo ? cActivo : cBoton;
+            m_BotonPorDentro.color = organo.PorDentro ? cActivo : cBoton;
+            m_BotonAire.color = AireActual != null && AireActual.Visible ? cActivo : cBoton;
+
+            m_EtiquetaTunicas.text = organo.textoColorear;
+            m_TextoTunicas.text = LeyendaGrupos();
             m_BotonTunicas.color = organo.ColorTunicas ? cActivo : cBoton;
             var etiquetas = organo.GetComponent<EtiquetasOrgano>();
             m_BotonEtiquetas.color = etiquetas != null && etiquetas.Visibles ? cActivo : cBoton;
@@ -243,7 +318,7 @@ namespace AtlasAnatomico
                 m_InfoNombre.text = p.nombre;
                 bool sinKichwa = string.IsNullOrWhiteSpace(p.kichwa) || p.kichwa.Trim().ToLower() == "pendiente";
                 m_InfoKichwa.text = sinKichwa ? "Kichwa: término por validar" : $"Kichwa: {p.kichwa}";
-                m_InfoTunica.text = $"Túnica: {p.tunica}";
+                m_InfoTunica.text = $"{organo.nombreGrupo}: {p.tunica}";
                 m_InfoDescripcion.text = p.descripcion;
                 m_InfoDato.text = string.IsNullOrEmpty(p.dato) ? "" : $"Dato: {p.dato}";
             }
@@ -252,6 +327,16 @@ namespace AtlasAnatomico
                 m_InfoNombre.text = "Elige una pieza";
                 m_InfoKichwa.text = m_InfoTunica.text = m_InfoDescripcion.text = m_InfoDato.text = "";
             }
+        }
+
+        /// <summary>Leyenda de colores con los grupos del órgano actual.</summary>
+        string LeyendaGrupos()
+        {
+            var vistos = new List<string>();
+            foreach (var p in organo.Partes)
+                if (!vistos.Contains(p.tunica) && OrganoController.ColoresTunica.ContainsKey(p.tunica ?? "")) vistos.Add(p.tunica);
+            return string.Join("   ", vistos.ConvertAll(g =>
+                $"<color=#{ColorUtility.ToHtmlStringRGB(OrganoController.ColoresTunica[g])}>■</color> {g}"));
         }
 
         void EscalarTexto(float factor)

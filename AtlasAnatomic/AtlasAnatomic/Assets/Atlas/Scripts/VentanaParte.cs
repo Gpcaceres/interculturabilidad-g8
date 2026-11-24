@@ -33,7 +33,7 @@ namespace AtlasAnatomico
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Instalar()
         {
-            foreach (var organo in FindObjectsByType<OrganoController>(FindObjectsSortMode.None))
+            foreach (var organo in FindObjectsByType<OrganoController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (organo.GetComponent<VentanaParte>() == null)
                     organo.gameObject.AddComponent<VentanaParte>();
         }
@@ -67,6 +67,11 @@ namespace AtlasAnatomico
             if (mirar.sqrMagnitude > 1e-6f) m_Raiz.rotation = Quaternion.LookRotation(mirar, Vector3.up);
         }
 
+        void OnDisable()   // al cambiar de órgano
+        {
+            if (m_Raiz != null) m_Raiz.gameObject.SetActive(false);
+        }
+
         void OnDestroy()
         {
             if (m_Raiz != null) Destroy(m_Raiz.gameObject);
@@ -80,7 +85,7 @@ namespace AtlasAnatomico
             bool sinKichwa = string.IsNullOrWhiteSpace(p.kichwa) || p.kichwa.Trim().ToLower() == "pendiente";
             m_Nombre.text = p.nombre;
             m_Kichwa.text = sinKichwa ? "Kichwa: término por validar" : $"Kichwa: {p.kichwa}";
-            m_Tunica.text = $"Túnica: {p.tunica}";
+            m_Tunica.text = $"{m_Organo.nombreGrupo}: {p.tunica}";
             m_Descripcion.text = p.descripcion;
             m_Dato.text = string.IsNullOrEmpty(p.dato) ? "" : $"Dato: {p.dato}";
             m_Dato.gameObject.SetActive(!string.IsNullOrEmpty(p.dato));

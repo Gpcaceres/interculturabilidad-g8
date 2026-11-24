@@ -26,5 +26,11 @@ namespace AtlasAnatomico
 
         [Tooltip("Pasos que se desplaza en la vista desglosada. Negativo = hacia delante (lado de la córnea).")]
         public float paso;
+
+        [Tooltip("Desplazamiento en la vista desglosada radial, en metros del modelo (ejes de Unity).")]
+        public Vector3 desglose;
+
+        [Tooltip("Pieza que cubre a otras: se vuelve translúcida con «Ver por dentro».")]
+        public bool envoltura;
     }
 }

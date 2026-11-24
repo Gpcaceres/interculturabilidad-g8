@@ -15,7 +15,7 @@ namespace AtlasAnatomico.Editor
     /// de la plantilla Mixed Reality, quitando lo que no corresponde al proyecto.
     /// Se puede volver a ejecutar: regenera prefab, materiales y escena.
     /// </summary>
-    public static class ConstructorAtlas
+    public static partial class ConstructorAtlas
     {
         const string RaizAtlas = "Assets/Atlas";
         const string RutaFbxOjo = RaizAtlas + "/Modelos/Ojo/ojo.fbx";
@@ -39,7 +39,7 @@ namespace AtlasAnatomico.Editor
                 { "Nervio_Optico", (new Color(0.93f, 0.82f, 0.58f), 0.35f, 1f) },
             };
 
-        [MenuItem("Atlas/1. Construir ojo y escena del Atlas", priority = 1)]
+        [MenuItem("Atlas/1. Construir órganos y escena del Atlas", priority = 1)]
         public static void ConstruirTodo()
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
@@ -47,9 +47,9 @@ namespace AtlasAnatomico.Editor
             var fantasma = CrearMateriales();
             var prefab = CrearPrefabOjo(fantasma);
             if (prefab == null) return;
-            CrearEscena(prefab);
+            CrearEscena(prefab, CrearPulmones());
             EditorUtility.DisplayDialog("Atlas Anatómico",
-                "Listo.\n\n• Prefab: " + RutaPrefabOjo + "\n• Escena: " + EscenaAtlas +
+                "Listo.\n\n• Prefabs: " + RutaPrefabOjo + ", " + RutaPrefabPulmones + "\n• Escena: " + EscenaAtlas +
                 "\n\nPulsa Play para probar con el simulador XR, o compila para el Quest.", "OK");
         }
 
@@ -87,9 +87,10 @@ namespace AtlasAnatomico.Editor
             return GuardarMaterial(shader, "MAT_Fantasma", new Color(0.75f, 0.80f, 0.88f), 0.6f, 0.10f);
         }
 
-        static Material GuardarMaterial(Shader shader, string nombre, Color color, float suavidad, float alpha)
+        static Material GuardarMaterial(Shader shader, string nombre, Color color, float suavidad, float alpha,
+                                         string carpeta = RutaMateriales)
         {
-            var ruta = $"{RutaMateriales}/{nombre}.mat";
+            var ruta = $"{carpeta}/{nombre}.mat";
             var mat = AssetDatabase.LoadAssetAtPath<Material>(ruta);
             if (mat == null)
             {
@@ -203,7 +204,7 @@ namespace AtlasAnatomico.Editor
 
         // ------------------------------------------------------------------ Escena
 
-        static void CrearEscena(GameObject prefabOjo)
+        static void CrearEscena(GameObject prefabOjo, GameObject prefabPulmones)
         {
             if (!System.IO.File.Exists(EscenaPlantilla))
             {
@@ -211,12 +212,9 @@ namespace AtlasAnatomico.Editor
                 return;
             }
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            AssetDatabase.DeleteAsset(EscenaAtlas);
-            if (!AssetDatabase.CopyAsset(EscenaPlantilla, EscenaAtlas))
-            {
-                EditorUtility.DisplayDialog("Atlas", "No se pudo copiar la escena de la plantilla.", "OK");
-                return;
-            }
+            // Se sobrescribe el archivo sin tocar su .meta: así conserva el guid que usa la configuración del build.
+            System.IO.File.Copy(EscenaPlantilla, EscenaAtlas, true);
+            AssetDatabase.ImportAsset(EscenaAtlas, ImportAssetOptions.ForceUpdate);
             var escena = EditorSceneManager.OpenScene(EscenaAtlas, OpenSceneMode.Single);
 
             // Fuera: contenido de demostración de la plantilla.
@@ -248,7 +246,16 @@ namespace AtlasAnatomico.Editor
             var menu = new GameObject("Menu Atlas", typeof(RectTransform));
             SceneManager.MoveGameObjectToScene(menu, escena);
             menu.transform.position = new Vector3(0.35f, 1.3f, 0.65f);
-            menu.AddComponent<MenuAtlas>().organo = ojo.GetComponent<OrganoController>();
+            var menuAtlas = menu.AddComponent<MenuAtlas>();
+            menuAtlas.organo = ojo.GetComponent<OrganoController>();
+            menuAtlas.organos.Add(menuAtlas.organo);
+            if (prefabPulmones != null)
+            {
+                var pulmones = (GameObject)PrefabUtility.InstantiatePrefab(prefabPulmones, escena);
+                pulmones.transform.position = ojo.transform.position;
+                pulmones.SetActive(false);   // el menú lo activa al elegirlo
+                menuAtlas.organos.Add(pulmones.GetComponent<OrganoController>());
+            }
 
             EditorSceneManager.MarkSceneDirty(escena);
             EditorSceneManager.SaveScene(escena);

@@ -34,9 +34,9 @@ namespace AtlasAnatomico
         static void Instalar()
         {
             if (Application.isMobilePlatform) return;   // en el visor se usan manos o controles
-            var organo = FindAnyObjectByType<OrganoController>();
-            if (organo != null && organo.GetComponent<ModoEscritorio>() == null)
-                organo.gameObject.AddComponent<ModoEscritorio>();
+            foreach (var organo in FindObjectsByType<OrganoController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (organo.GetComponent<ModoEscritorio>() == null)
+                    organo.gameObject.AddComponent<ModoEscritorio>();
         }
 
         void Start()
